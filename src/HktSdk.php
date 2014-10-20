@@ -2,8 +2,6 @@
 
 namespace wataridori\HktSdk;
 
-require '../vendor/autoload.php';
-
 class HKT_SDK
 {
     /**

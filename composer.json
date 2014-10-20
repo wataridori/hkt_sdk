@@ -13,5 +13,8 @@
             "name": "Tran Duc Thang",
             "email": "thangtd90@gmail.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {"wataridori\\HktSdk\\": "src/"}
+    }
 }
