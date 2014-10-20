@@ -1,0 +1,17 @@
+{
+    "name": "wataridori/hkt_sdk",
+    "description": "The SDK for Framgia Hyakkaten",
+    "require": {
+        "guzzlehttp/guzzle": "~5.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "~5.0"
+    },
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Tran Duc Thang",
+            "email": "thangtd90@gmail.com"
+        }
+    ]
+}
