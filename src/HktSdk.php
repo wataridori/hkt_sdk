@@ -81,7 +81,12 @@ class HKT_SDK
      */
     public function getCurrentUri()
     {
-        return 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/{$_SERVER['REQUEST_URI']}";
+        $server_url = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/";
+        if ($_SERVER['REQUEST_URI'] === '/') {
+            return $server_url;
+        } else {
+            return $server_url . $_SERVER['REQUEST_URI'];
+        }
     }
 
     /**
@@ -95,16 +100,17 @@ class HKT_SDK
     }
 
     /**
+     * @param string|null $redirect_uri
      * @return string
      * Generate Authorize URL
      */
-    public function generateAuthorizeUrl()
+    public function generateAuthorizeUrl($redirect_uri = null)
     {
         $query = http_build_query(array(
             'response_type' => 'code',
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
-            'redirect_uri' => $this->getCurrentUri(),
+            'redirect_uri' => $redirect_uri ? $redirect_uri : $this->getCurrentUri(),
             'state' => $this->generateState(),
         ));
         return self::HKT_OAUTH_URL . "authorize?$query";
