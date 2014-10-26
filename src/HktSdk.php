@@ -210,7 +210,6 @@ class HKT_SDK
         $query = http_build_query([
             'response_type' => 'code',
             'client_id' => $this->client_id,
-            'client_secret' => $this->client_secret,
             'redirect_uri' => $redirect_uri ? $redirect_uri : $this->getCurrentUri(),
             'state' => $this->state,
         ]);
