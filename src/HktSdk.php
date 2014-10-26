@@ -3,6 +3,7 @@
 namespace wataridori\HktSdk;
 
 use \GuzzleHttp\Client;
+use GuzzleHttp\Exception\RequestException;
 
 class HKT_SDK
 {
@@ -44,21 +45,21 @@ class HKT_SDK
 
     /**
      * @var int
-     * Id of the user in HKT. 0 if user_id can not be retrieved
+     * Information about HKT's user
      */
-    private $user_id;
+    private $user;
 
     /**
      * @const string HKT_OAUTH_URL
      * The base OAuth URL at Framgia Hyakkaten
      */
-    const HKT_OAUTH_URL = 'http://hkt.testthangtd.com/oauth/';
+    const HKT_OAUTH_URL = 'https://hkt.thangtd.com/oauth/';
 
     /**
      * @const string HKT_API_URL
      * The base API URL at Framgia Hyakkaten
      */
-    const HKT_API_URL = 'http://hkt.testthangtd.com/api/';
+    const HKT_API_URL = 'https://hkt.thangtd.com/api/';
 
     /**
      * @param string $client_id
@@ -125,6 +126,15 @@ class HKT_SDK
      */
     public function getAccessToken()
     {
+        if ($this->access_token !== null) {
+            return $this->access_token;
+        }
+
+        $user_access_token = $this->getUserAccessToken();
+        if ($user_access_token) {
+            $this->setAccessToken($user_access_token);
+        }
+
         return $this->access_token;
     }
 
@@ -143,6 +153,9 @@ class HKT_SDK
      */
     public function __construct($client_id, $client_secret)
     {
+        if (!session_id()) {
+            session_start();
+        }
         $this->setClientId($client_id);
         $this->setClientSecret($client_secret);
         $this->persistent_storage = new PersistentStorage($client_id);
@@ -160,13 +173,19 @@ class HKT_SDK
      * @return string
      * Get Current URI
      */
-    public function getCurrentUri()
+    public function getCurrentUri($params = true)
     {
-        $server_url = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}/";
-        if ($_SERVER['REQUEST_URI'] === '/') {
-            return $server_url;
+        $server_url = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}";
+        if ($params) {
+            $uri = $_SERVER['REQUEST_URI'];
         } else {
-            return $server_url . $_SERVER['REQUEST_URI'];
+            $vars = parse_url($_SERVER['REQUEST_URI']);
+            $uri = isset($vars['path']) ? $vars['path'] : $_SERVER['REQUEST_URI'];
+        }
+        if ($uri[0] === '/') {
+            return $server_url . $uri;
+        } else {
+            return $server_url . '/' . $uri;
         }
     }
 
@@ -269,32 +288,36 @@ class HKT_SDK
         }
 
         if ($redirect_uri === null) {
-            $redirect_uri = $this->getCurrentUri();
+            $redirect_uri = $this->getCurrentUri(false);
         }
 
         try {
             $access_token_response =
                 $this->http_client->post(
-                    self::HKT_OAUTH_URL . 'token',
-                    [
+                    self::HKT_OAUTH_URL . 'token', [
                         'body' => [
+                            'grant_type'    => 'authorization_code',
                             'client_id' => $this->getClientId(),
                             'client_secret' => $this->getClientSecret(),
                             'redirect_uri' => $redirect_uri,
                             'code' => $code,
                         ]
-                    ]
-                );
-        } catch (\Exception $e) {
+                ]);
+
+        } catch (RequestException $e) {
+            echo $e->getRequest() . "\n";
+            if ($e->hasResponse()) {
+                echo $e->getResponse() . "\n";
+            }
+            exit();
+        }
+
+        $response = (string) $access_token_response->getBody();
+        if (empty($response)) {
             return false;
         }
 
-        if (empty($access_token_response)) {
-            return false;
-        }
-
-        $response_params = array();
-        parse_str($access_token_response, $response_params);
+        $response_params = json_decode($response, true);
         if (!isset($response_params['access_token'])) {
             return false;
         }
@@ -309,11 +332,11 @@ class HKT_SDK
      * @return array HKT's user information.
      */
     public function getUser() {
-        if ($this->user_id !== null) {
-            return $this->user_id;
+        if (!empty($this->user)) {
+            return $this->user;
         }
 
-        return $this->user_id = $this->getUserFromAvailableData();
+        return $this->user = $this->getUserFromAvailableData();
     }
 
     /**
@@ -326,11 +349,12 @@ class HKT_SDK
         $persisted_access_token = $this->persistent_storage->getPersistentData('access_token');
 
         $access_token = $this->getAccessToken();
+
         if ($access_token &&
             !($user && $persisted_access_token == $access_token)) {
             $user = $this->getUserFromAccessToken();
             if ($user) {
-                $this->persistent_storage->setPersistentData('user_id', $user);
+                $this->persistent_storage->setPersistentData('user', $user);
             } else {
                 $this->persistent_storage->clearAllPersistentData();
             }
@@ -339,15 +363,48 @@ class HKT_SDK
         return $user;
     }
 
+    private function generateApiQuery($params = [])
+    {
+        $default_params = [
+            'access_token' => $this->getAccessToken(),
+        ];
+        return http_build_query(array_merge($default_params, $params));
+    }
+
     /**
-     * @return int user_id
+     * @return array user information
+     * under construction
      */
     private function getUserFromAccessToken()
     {
-        return [
-            'id' => 1,
-            'email' => 'thangtd90@gmail.com',
-            'displayed_name' => 'Tran Duc Thang',
-        ];
+        $query = $this->generateApiQuery();
+        $url = self::HKT_API_URL . 'user?' . $query;
+
+        try {
+            $response = $this->http_client->get($url);
+        } catch (RequestException $e) {
+            echo $e->getRequest() . "\n";
+            if ($e->hasResponse()) {
+                echo $e->getResponse() . "\n";
+            }
+            exit();
+        }
+
+        $response_text = (string) $response->getBody();
+        if ($response_text) {
+            $response_data = json_decode($response_text, true);
+            if ($response_data['status'] === 'OK') {
+                return $response_data['data'];
+            }
+        }
+        return [];
+    }
+
+    /**
+     * Clear all persistent data. Log out
+     */
+    public function logout()
+    {
+        $this->persistent_storage->clearAllPersistentData();
     }
 }
