@@ -147,6 +147,14 @@ class HKT_SDK
     }
 
     /**
+     * @return Client
+     */
+    public function getHttpClient()
+    {
+        return $this->http_client;
+    }
+
+    /**
      * @param string $client_id
      * @param string $client_secret
      * Construction
@@ -170,10 +178,11 @@ class HKT_SDK
     }
 
     /**
+     * @param bool $params
      * @return string
      * Get Current URI
      */
-    public function getCurrentUri($params = true)
+    private function getCurrentUri($params = true)
     {
         $server_url = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}";
         if ($params) {
@@ -187,33 +196,6 @@ class HKT_SDK
         } else {
             return $server_url . '/' . $uri;
         }
-    }
-
-    /**
-     * @param int $length
-     * @return string
-     * Generate random string use for create URL
-     */
-    public function generateState($length = 10)
-    {
-        return substr(sha1(rand()), 0, $length);
-    }
-
-    /**
-     * @param string|null $redirect_uri
-     * @return string
-     * Generate Authorize URL
-     */
-    public function generateAuthorizeUrl($redirect_uri = null)
-    {
-        $this->establishCSRFTokenState();
-        $query = http_build_query([
-            'response_type' => 'code',
-            'client_id' => $this->client_id,
-            'redirect_uri' => $redirect_uri ? $redirect_uri : $this->getCurrentUri(),
-            'state' => $this->state,
-        ]);
-        return self::HKT_OAUTH_URL . "authorize?$query";
     }
 
     /**
@@ -325,20 +307,6 @@ class HKT_SDK
     }
 
     /**
-     * Get the information array of the connected user, or 0
-     * if the HKT user is not connected.
-     *
-     * @return array HKT's user information.
-     */
-    public function getUser() {
-        if (!empty($this->user)) {
-            return $this->user;
-        }
-
-        return $this->user = $this->getUserFromAvailableData();
-    }
-
-    /**
      *
      * @return array The information of the connected HKT user,
      * or empty array if no such user exists.
@@ -397,6 +365,37 @@ class HKT_SDK
             }
         }
         return [];
+    }
+
+    /**
+     * @param string|null $redirect_uri
+     * @return string
+     * Generate Authorize URL
+     */
+    public function getLoginUrl($redirect_uri = null)
+    {
+        $this->establishCSRFTokenState();
+        $query = http_build_query([
+            'response_type' => 'code',
+            'client_id' => $this->client_id,
+            'redirect_uri' => $redirect_uri ? $redirect_uri : $this->getCurrentUri(),
+            'state' => $this->state,
+        ]);
+        return self::HKT_OAUTH_URL . "authorize?$query";
+    }
+
+    /**
+     * Get the information array of the connected user, or 0
+     * if the HKT user is not connected.
+     *
+     * @return array HKT's user information.
+     */
+    public function getUser() {
+        if (!empty($this->user)) {
+            return $this->user;
+        }
+
+        return $this->user = $this->getUserFromAvailableData();
     }
 
     /**
