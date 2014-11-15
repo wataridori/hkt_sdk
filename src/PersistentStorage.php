@@ -14,7 +14,7 @@ class PersistentStorage {
      * All keys that can be saved to session
      */
     public static $supported_keys =
-        array('state', 'code', 'access_token', 'user');
+        ['state', 'code', 'access_token', 'user'];
 
     /**
      * @var string $client_id
@@ -27,7 +27,18 @@ class PersistentStorage {
      */
     public function __construct($client_id)
     {
+        if (!session_id()) {
+            session_start();
+        }
         $this->client_id = $client_id;
+    }
+
+    /**
+     * @return string Client ID
+     */
+    public function getClientId()
+    {
+        return $this->client_id;
     }
 
     /**
@@ -42,15 +53,17 @@ class PersistentStorage {
     /**
      * @param string $key
      * @param string $value
+     * @return boolean set Persistent Data successfully or not
      */
     public function setPersistentData($key, $value) {
         if (!in_array($key, self::$supported_keys)) {
             error_log('Unsupported key passed to setPersistentData.');
-            return;
+            return false;
         }
 
         $session_var_name = $this->createSessionVariableName($key);
         $_SESSION[$session_var_name] = $value;
+        return true;
     }
 
     /**
@@ -71,17 +84,20 @@ class PersistentStorage {
 
     /**
      * @param string $key
+     * @return boolean clear Persistent Data successfully or not
      */
     public function clearPersistentData($key) {
         if (!in_array($key, self::$supported_keys)) {
             error_log('Unsupported key passed to clearPersistentData.');
-            return;
+            return false;
         }
 
         $session_var_name = $this->createSessionVariableName($key);
         if (isset($_SESSION[$session_var_name])) {
             unset($_SESSION[$session_var_name]);
         }
+
+        return true;
     }
 
     /**
