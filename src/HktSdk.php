@@ -203,7 +203,7 @@ class HKT_SDK
      */
     private function establishCSRFTokenState() {
         if ($this->state === null) {
-            $this->state = substr(sha1(rand()), 0, 20);
+            $this->state = md5(mt_rand() . time());
             $this->persistent_storage->setPersistentData('state', $this->state);
         }
     }
@@ -404,5 +404,7 @@ class HKT_SDK
     public function logout()
     {
         $this->persistent_storage->clearAllPersistentData();
+        $this->setState(null);
+        $this->setAccessToken(null);
     }
 }
