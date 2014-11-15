@@ -2,7 +2,7 @@
 
 namespace wataridori\HktSdk;
 
-use \GuzzleHttp\Client;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 class HKT_SDK
