@@ -290,7 +290,7 @@ class HKT_SDK
             if ($e->hasResponse()) {
                 echo $e->getResponse() . "\n";
             }
-            exit();
+            return false;
         }
 
         $response = (string) $access_token_response->getBody();
@@ -354,7 +354,7 @@ class HKT_SDK
             if ($e->hasResponse()) {
                 echo $e->getResponse() . "\n";
             }
-            exit();
+            return false;
         }
 
         $response_text = (string) $response->getBody();
