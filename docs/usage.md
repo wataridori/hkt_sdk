@@ -37,7 +37,7 @@ $hkt_sdk = HKT_SDK(YOUR_CLIENT_ID, YOUR_CLIENT_SECRET);
 
 ```php
 // If there is no $callback url added, HKT will redirect to the url you registered when created app. 
-$hkt_sdk->generateAuthorizeUrl($callback);
+$hkt_sdk->getLoginUrl($callback);
 ```
 
 * Get User Information
@@ -56,8 +56,4 @@ if ($user) {
 ```php
 $hkt_sdk->logout();
 ```
-
-### Sites
-* [Framgia Hyakkaten](https://hkt.thangtd.com)
-* [Framgia Hyakkaten Developer Center](http://developers.hkt.thangtd.com)
 
